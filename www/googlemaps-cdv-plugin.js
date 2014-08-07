@@ -251,10 +251,36 @@ App.prototype.getMap = function(div, params) {
     args.push(divSize);
   }
   cordova.exec(function() {
+    self.set("__simulate", false);
     setTimeout(function() {
       self.trigger(plugin.google.maps.event.MAP_READY, self);
     }, 100);
-  }, self.errorHandler, PLUGIN_NAME, 'getMap', args);
+  }, function(err) {
+    self.set("__simulate", true);
+    var script = document.createElement("script");
+    script.src = "http://maps.googleapis.com/maps/api/js?sensor=false";
+    script.type = "text/javascript";
+    script.onload = function() {
+      setTimeout(function() {
+        var container = document.createElement("div");
+        if (isDom(div)) {
+          div.appendChild(container);
+        } else {
+          container.style.width = "300px";
+          container.style.height = 300;
+          document.body.appendChild(container);
+        }
+        console.log(google.maps.Map);
+        var map = new google.maps.Map(container);
+        self.set("__map_container", container);
+        self.set("__map", map);
+        map.addListenerOnce("bounds_changed", function() {
+          self.trigger(plugin.google.maps.event.MAP_READY, self);
+        });
+      }, 1000);
+    };
+    document.head.appendChild(script);
+  }, PLUGIN_NAME, 'getMap', args);
   return self;
 };
 
@@ -352,11 +378,15 @@ App.prototype.moveCamera = function(cameraPosition, callback) {
     cameraPosition.target = [cameraPosition.target.southwest, cameraPosition.target.northeast];
   }
   var self = this;
-  cordova.exec(function() {
-    if (typeof callback === "function") {
-      callback.call(self);
-    }
-  }, self.errorHandler, PLUGIN_NAME, 'exec', ['Map.moveCamera', cameraPosition]);
+  if (self.get("__simulate")) {
+    
+  } else {
+    cordova.exec(function() {
+      if (typeof callback === "function") {
+        callback.call(self);
+      }
+    }, self.errorHandler, PLUGIN_NAME, 'exec', ['Map.moveCamera', cameraPosition]);
+  }
 };
 
 App.prototype.setMyLocationEnabled = function(enabled) {
@@ -481,7 +511,19 @@ App.prototype.setDiv = function(div) {
     self.set("div", div);
     args.push(getDivSize(div));
   }
-  cordova.exec(null, self.errorHandler, PLUGIN_NAME, 'setDiv', args);
+  
+  if (self.get("__simulate")) {
+    var container = self.get("__map_container");
+    if (isDom(div)) {
+      div.appendChild(container);
+    } else {
+      if (container.parentNode) {
+        container.parentNode.removeChild(container);
+      }
+    }
+  } else {
+    cordova.exec(null, self.errorHandler, PLUGIN_NAME, 'setDiv', args);
+  }
 };
  
 /**

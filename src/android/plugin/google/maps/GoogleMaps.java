@@ -306,7 +306,7 @@ public class GoogleMaps extends CordovaPlugin implements View.OnClickListener, O
       } catch (Exception e) {};
       
       if (errorDialog != null) {
-        errorDialog.show();
+        //errorDialog.show();
       } else {
         boolean isNeedToUpdate = false;
         
@@ -373,7 +373,7 @@ public class GoogleMaps extends CordovaPlugin implements View.OnClickListener, O
         AlertDialog alertDialog = alertDialogBuilder.create();
         
         // show it
-        alertDialog.show();
+        //alertDialog.show();
       }
 
       callbackContext.error("Google Play Services is not available.");
