@@ -250,37 +250,65 @@ App.prototype.getMap = function(div, params) {
     var divSize = getDivSize(div);
     args.push(divSize);
   }
-  cordova.exec(function() {
+  self.set("__simulate", true); // for debug
+  
+  
+  var container = document.createElement("div");
+  container.id="testDiv";
+  container.style.width = "100%";
+  container.style.height = "100%";
+  self.set("__map_container", container);
+  
+  var isSimulatedMode = self.get("__simulate");
+  var generateMapV3 = function() {
+    self.set("__simulate", true);
+    
+    var script = document.createElement("script");
+    script.setAttribute("src", "https://maps.googleapis.com/maps/api/js?sensor=false&v=3&callback=___api_init");
+    script.setAttribute("type","text/javascript");
+    window.___api_init = function() {
+      if (isDom(div)) {
+        div.appendChild(container);
+      } else {
+        if (!container.parentNode) {
+          container.style.width = "300px";
+          container.style.height = "300px";
+          container.style.display = "none";
+          document.body.appendChild(container);
+        }
+      }
+      var map = new google.maps.Map(container, {
+        center: new google.maps.LatLng(0, 0),
+        zoom: 3,
+        streetViewControl: false,
+        mapTypeControl: false,
+        zoomControlOptions: {
+          position: google.maps.ControlPosition.RIGHT_BOTTOM
+        },
+        minZoom: 3
+      });
+      self.set("__map", map);
+      google.maps.event.addListenerOnce(map, "bounds_changed", function() {
+        self.trigger(plugin.google.maps.event.MAP_READY, self);
+      });
+    };
+    document.head.appendChild(script);
+  };
+  
+  var generateMapNative = function() {
+    self.set("__map_container", undefined);
+    self.set("__map", undefined);
     self.set("__simulate", false);
     setTimeout(function() {
       self.trigger(plugin.google.maps.event.MAP_READY, self);
     }, 100);
-  }, function(err) {
-    self.set("__simulate", true);
-    var script = document.createElement("script");
-    script.src = "http://maps.googleapis.com/maps/api/js?sensor=false";
-    script.type = "text/javascript";
-    script.onload = function() {
-      setTimeout(function() {
-        var container = document.createElement("div");
-        if (isDom(div)) {
-          div.appendChild(container);
-        } else {
-          container.style.width = "300px";
-          container.style.height = 300;
-          document.body.appendChild(container);
-        }
-        console.log(google.maps.Map);
-        var map = new google.maps.Map(container);
-        self.set("__map_container", container);
-        self.set("__map", map);
-        map.addListenerOnce("bounds_changed", function() {
-          self.trigger(plugin.google.maps.event.MAP_READY, self);
-        });
-      }, 1000);
-    };
-    document.head.appendChild(script);
-  }, PLUGIN_NAME, 'getMap', args);
+  };
+  
+  if (!isSimulatedMode) {
+    cordova.exec(generateMapNative, generateMapV3, PLUGIN_NAME, 'getMap', args);
+  } else {
+    self.trigger(plugin.google.maps.event.MAP_READY, self);
+  }
   return self;
 };
 
