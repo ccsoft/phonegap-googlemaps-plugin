@@ -506,6 +506,13 @@ public class GoogleMaps extends CordovaPlugin implements View.OnClickListener, O
       }
       options.camera(builder.build());
     }
+
+    if (params.has("ignoreDensity")) {
+        Boolean ignoreDensity = params.getBoolean("ignoreDensity");
+        if (ignoreDensity) {
+        	this.density = 1.0f;
+        }
+    }
     
     mapView = new MapView(activity, options);
     mapView.onCreate(null);
