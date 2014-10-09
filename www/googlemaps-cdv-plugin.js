@@ -247,7 +247,7 @@ App.prototype._onCameraEvent = function(eventName, params) {
 };
 
 
-App.prototype.getMap = function(div, params) {
+App.prototype.getMap = function(div, params, options) {
   var self = this,
       args = [];
   
@@ -286,9 +286,12 @@ App.prototype.getMap = function(div, params) {
     div.addEventListener("DOMNodeInserted", _append_child);
     
     self.set("keepWatching", true);
-    while(div.parentNode) {
-      div.style.backgroundColor = 'rgba(0,0,0,0)';
-      div = div.parentNode;
+    var manualTransparency = options && options.manualTransparency;
+    if (!manualTransparency) {
+        while (div.parentNode) {
+            div.style.backgroundColor = 'rgba(0,0,0,0)';
+            div = div.parentNode;
+        }
     }
   }
   cordova.exec(function() {
